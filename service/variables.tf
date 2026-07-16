@@ -1,0 +1,83 @@
+variable project_id {
+  description = "The project ID to deploy to"
+  type        = string
+  default     = "py-service-01"
+}
+
+variable region {
+  description = "The region to deploy to"
+  type        = string
+  default     = "northamerica-northeast1"
+}
+
+variable composer_service_account_id {
+  description = "The service account ID for the Cloud Composer environment"
+  type        = string
+  default     = "py-service-01-composer-sa"
+}
+
+variable host_project_id {
+  description = "The host project ID for the shared VPC"
+  type        = string
+  default     = "py-host-01"
+}
+
+variable kms_key_ring_name {
+  description = "The name of the KMS key ring for the Cloud Composer environment"
+  type        = string
+  default     = "composer-key-ring"
+}
+
+variable kms_key_name {
+  description = "The name of the KMS key for the Cloud Composer environment"
+  type        = string
+  default     = "composer-key"
+}
+
+variable composer_env_name {
+  description = "The name of the Cloud Composer environment"
+  type        = string
+  default     = "composer-env"
+}
+
+variable airflow_ui_allowed_ip_ranges {
+  description = "A list of allowed IP ranges for accessing the Airflow UI"
+  type        = list(object({
+    cidr        = string
+    description = string
+  }))
+  default     = [
+    {
+      cidr        = "209.171.85.234/32"
+      description = "My Galaxy IP" 
+    },
+    {
+      cidr        = "99.229.154.65/32"
+      description = "My Home IP"
+    }
+  ]
+}
+
+variable composer_image_version {
+  description = "The image version for the Cloud Composer environment"
+  type        = string
+  default     = "composer-3-airflow-3.1.7"
+}
+
+variable subnetwork {
+  description = "The subnetwork for the Cloud Composer environment"
+  type        = string
+  default     = "projects/py-host-01/regions/northamerica-northeast1/subnetworks/py-workload-nane1"
+}
+
+variable environment {
+  description = "The environment name for labeling resources"
+  type        = string
+  default     = "dev"
+}
+
+variable create_composer_v3 {
+  description = "If true, create the Composer v3 environment(s)."
+  type        = bool
+  default     = false
+}
