@@ -12,4 +12,8 @@
 
 [Create a Custom VPC](vpc.md)
 
-[Firewall Rules for Creating Cloud Composer Environment](firewall-composer.md)
+[Set up Subnets for Cloud Composer](composer-subnet.md)
+
+[Firewall Rules for Private Cloud Composer Environment](firewall-composer.md)
+
+[Set up Subnets for Dataproc Serverless](dataproc-subnet.md)

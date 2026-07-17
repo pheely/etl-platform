@@ -1,2 +1,7 @@
 /**/.terraform
 /**/.terraform.lock.hcl
+.vscode
+/**/.pytest_cache
+/**/dist
+/**/my_env
+

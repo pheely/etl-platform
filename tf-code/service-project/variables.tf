@@ -22,13 +22,13 @@ variable host_project_id {
   default     = "py-host-01"
 }
 
-variable kms_key_ring_name {
+variable composer_kms_key_ring_name {
   description = "The name of the KMS key ring for the Cloud Composer environment"
   type        = string
-  default     = "composer-key-ring"
+  default     = "composer-keyring"
 }
 
-variable kms_key_name {
+variable composer_kms_key_name {
   description = "The name of the KMS key for the Cloud Composer environment"
   type        = string
   default     = "composer-key"
@@ -80,4 +80,46 @@ variable create_composer_v3 {
   description = "If true, create the Composer v3 environment(s)."
   type        = bool
   default     = false
+}
+
+variable dataproc_service_account_id {
+  description = "The service account ID for the Dataproc Serverless Batch"
+  type        = string
+  default     = "dataproc-sa"
+}
+
+variable dataproc_code_bucket_name {
+  description = "The name of the GCS bucket for Dataproc code"
+  type        = string
+  default     = "py-service-01-etl-code"
+}
+
+variable etl_input_bucket_name {
+  description = "The name of the GCS bucket for ETL input data"
+  type        = string
+  default     = "py-service-01-etl-input"
+}
+
+variable etl_output_bucket_name {
+  description = "The name of the GCS bucket for ETL output data"
+  type        = string
+  default     = "py-service-01-etl-output"
+}
+
+variable dataproc_key_ring_name {
+  description = "The name of the KMS key ring for Dataproc"
+  type        = string
+  default     = "dataproc-key-ring"
+}
+
+variable dataproc_key_name {
+  description = "The name of the KMS key for Dataproc"
+  type        = string
+  default     = "dataproc-key"
+}
+
+variable etl_job_status_pubsub_topic_name {
+  description = "The name of the Pub/Sub topic for ETL job status"
+  type        = string
+  default     = "etl-job-status"
 }

@@ -35,3 +35,15 @@ resource "google_project_iam_member" "composer_storage_object_admin" {
     role    = "roles/storage.objectAdmin"
     member  = "serviceAccount:${google_service_account.composer_sa.email}"
 }
+
+resource "google_service_account" "dataproc_sa" {
+    account_id   = var.dataproc_service_account_id
+    display_name = "Dataproc Serverless Batch Service Account"
+    project      = var.project_id
+}
+
+resource "google_project_iam_member" "dataproc_sa_dataproc_worker" {
+    project = var.project_id
+    role    = "roles/dataproc.worker"
+    member  = "serviceAccount:${google_service_account.dataproc_sa.email}"
+}

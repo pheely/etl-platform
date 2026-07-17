@@ -7,7 +7,7 @@ locals {
       region                  = "northamerica-northeast1"
       subnetwork_name         = "composer-nane1"
       network_attachment_name = "composer-na-nane1"
-      primary_range           = "10.0.0.0/20"
+      primary_range           = "10.0.1.0/28"
     }
 
     # nane2 = {
@@ -15,7 +15,7 @@ locals {
     #   region                  = "northamerica-northeast2"
     #   subnetwork_name         = "composer-nane2"
     #   network_attachment_name = "composer-na-nane2"
-    #   primary_range           = "10.0.16.0/20"
+    #   primary_range           = "10.0.1.16/28"
     # }
   }
 
