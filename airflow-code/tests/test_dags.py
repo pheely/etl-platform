@@ -54,13 +54,14 @@ class TestDataprocServerlessDag(unittest.TestCase):
 
         # Target the properly nested runtime_config sub-dictionary
         runtime_config = batch_config.get("runtime_config", {})
+        self.assertIsNotNone(runtime_config, "runtime_config is missing.")
 
         self.assertIsNotNone(
             execution_config.get("kms_key"),
             "The Cloud KMS encryption key mapping is missing from runtime_config."
         )
         self.assertEqual(
-            execution_config.get("kms_key"), 
+            execution_config.get("kms_key"),
             "projects/py-service-01/locations/northamerica-northeast1/keyRings/dataproc-key-ring/cryptoKeys/dataproc-key"
         )
 
