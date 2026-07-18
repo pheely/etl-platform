@@ -47,3 +47,9 @@ resource "google_project_iam_member" "dataproc_sa_dataproc_worker" {
     role    = "roles/dataproc.worker"
     member  = "serviceAccount:${google_service_account.dataproc_sa.email}"
 }
+
+resource "google_service_account_iam_member" "composer_sa_impersonate_dataproc_sa" {
+    role = "roles/iam.serviceAccountUser"
+    service_account_id = google_service_account.dataproc_sa.id
+    member = "serviceAccount:${google_service_account.composer_sa.email}"
+}
