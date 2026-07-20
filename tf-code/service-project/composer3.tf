@@ -11,6 +11,11 @@ module "composer_v3" {
   region                   = each.value.region
   composer_service_account = google_service_account.composer_sa.email
 
+  airflow_config_overrides = {
+    "composer_auth_user_registration_role" = "Op"
+    "composer_auth_admin_users" = "admin@pycloudlabs.cc"
+  }
+  
   # Private-only Composer 3
   use_private_environment = true
 
