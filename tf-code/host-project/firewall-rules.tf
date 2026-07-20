@@ -20,6 +20,8 @@ locals {
 
     private_google_access_ranges = "199.36.153.8/30"
 
+    cloud_run_cidr   = "10.100.50.0/26"
+
     # Internal RFC1918 destinations.
     # You can tighten this later to only approved internal ranges
     private_rfc1918_ranges = [
@@ -30,7 +32,7 @@ locals {
 }
 
 # Rule 1 - Allow internal ingress between Composer ranges
-# No longer required for Composer v3 
+# No longer required for Composer v3
 # resource "google_compute_firewall" "allow_composer_internal_ingress" {
 #     name    = "allow-composer-internal-ingress"
 #     project = var.project_id
@@ -79,7 +81,7 @@ resource "google_compute_firewall" "allow_composer_private_google_access_egress"
 }
 
 # Rule 3 - Allow egress to internal private destinations
-# This is too broad. Remove it for now. If you need to allow egress to internal 
+# This is too broad. Remove it for now. If you need to allow egress to internal
 # destinations, you can add specific rules for those destinations.
 # resource "google_compute_firewall" "allow_composer_private_egress" {
 #     name    = "allow-composer-private-egress"
@@ -153,4 +155,34 @@ resource "google_compute_firewall" "allow_dataproc_egress_traffic" {
     allow {
         protocol = "tcp"
     }
+}
+
+
+
+
+
+# CHANGES MADE FOR CLOUD RUN
+# ====================================================================
+# ALLOW Rule: Let Cloud Run talk to the Composer 3 Network Boundary
+# ====================================================================
+resource "google_compute_firewall" "allow_cloud_run_to_composer" {
+  project     = var.project_id
+  name        = "allow-cloudrun-to-composer-3"
+  network     = local.network_name
+  direction   = "INGRESS"
+  priority    = 1000
+
+  # Traffic source: Your dedicated Cloud Run egress subnet
+  source_ranges = [local.cloud_run_cidr]
+
+  # Traffic destination: The network endpoints where your Composer 3 architecture hooks in
+  destination_ranges = [local.composer_nane1_primary_range]
+
+  # Allow the standard web/secure web traffic vectors used by Airflow API endpoints
+  allow {
+    protocol = "tcp"
+    ports    = ["80", "443"]
+  }
+
+  description = "Allows the Cloud Run container instances to securely call the Airflow API endpoints on Composer 3 via local network blocks."
 }
