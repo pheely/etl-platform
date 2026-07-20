@@ -1,9 +1,29 @@
+resource "google_service_account" "dataproc_sa" {
+    account_id   = var.dataproc_service_account_id
+    display_name = "Dataproc Serverless Batch Service Account"
+    project      = var.project_id
+}
+
 resource "google_service_account" "composer_sa" {
     account_id   = var.composer_service_account_id
     display_name = "Cloud Composer Environment Service Account"
     project      = var.project_id
 }
 
+resource "google_service_account" "cloudrun_sa" {
+    account_id   = var.cloudrun_service_account_id
+    display_name = "Cloud Run Service Account"
+    project      = var.project_id
+}
+
+# Dataproc SA Permissions
+resource "google_project_iam_member" "dataproc_sa_dataproc_worker" {
+    project = var.project_id
+    role    = "roles/dataproc.worker"
+    member  = "serviceAccount:${google_service_account.dataproc_sa.email}"
+}
+
+# Composer SA permissions
 resource "google_project_iam_member" "composer_worker" {
     project = var.project_id
     role    = "roles/composer.worker"
@@ -36,20 +56,15 @@ resource "google_project_iam_member" "composer_storage_object_admin" {
     member  = "serviceAccount:${google_service_account.composer_sa.email}"
 }
 
-resource "google_service_account" "dataproc_sa" {
-    account_id   = var.dataproc_service_account_id
-    display_name = "Dataproc Serverless Batch Service Account"
-    project      = var.project_id
-}
-
-resource "google_project_iam_member" "dataproc_sa_dataproc_worker" {
-    project = var.project_id
-    role    = "roles/dataproc.worker"
-    member  = "serviceAccount:${google_service_account.dataproc_sa.email}"
-}
-
 resource "google_service_account_iam_member" "composer_sa_impersonate_dataproc_sa" {
     role = "roles/iam.serviceAccountUser"
     service_account_id = google_service_account.dataproc_sa.id
     member = "serviceAccount:${google_service_account.composer_sa.email}"
+}
+
+# CloudRun SA permissions
+resource "google_project_iam_member" "cloudrun_sa_composer_user" {
+    project = var.project_id
+    role    = "roles/composer.user"
+    member  = "serviceAccount:${google_service_account.cloudrun_sa.email}"
 }
