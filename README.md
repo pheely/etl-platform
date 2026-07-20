@@ -12,8 +12,11 @@
 
 [Create a Custom VPC](doc/vpc.md)
 
+[Set up Subnets for Dataproc Serverless](doc/dataproc-subnet.md)
+
 [Set up Subnets for Cloud Composer](doc/composer-subnet.md)
 
 [Firewall Rules for Private Cloud Composer Environment](doc/firewall-composer.md)
 
-[Set up Subnets for Dataproc Serverless](doc/dataproc-subnet.md)
+[Accessing Airflow UI](doc/airflow-ui.md)
+
