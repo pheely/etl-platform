@@ -14,3 +14,11 @@ resource "google_project_iam_member" "dataproc_network_user" {
     role    = "roles/compute.networkUser"
     member  = "serviceAccount:service-${data.google_project.service_project.number}@dataproc-accounts.iam.gserviceaccount.com"
 }
+
+resource "google_compute_subnetwork_iam_member" "cloudrun_agent_shared_vpc_user" {
+  project    = var.project_id
+  region     = "northamerica-northeast1"
+  subnetwork = "cloudrun-egress-subnet-nane1"
+  role       = "roles/compute.networkUser"
+  member     = "serviceAccount:service-${data.google_project.service_project.number}@serverless-robot-prod.iam.gserviceaccount.com"
+}
