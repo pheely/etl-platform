@@ -2,6 +2,7 @@
 /**/.terraform.lock.hcl
 .vscode
 /**/__pycache__
+**/__pycache__
 /**/.pytest_cache
 /**/dist
 /**/my_env

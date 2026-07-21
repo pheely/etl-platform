@@ -48,7 +48,7 @@ variable airflow_ui_allowed_ip_ranges {
   }))
   default     = [
     {
-      cidr        = "209.171.85.0/24"
+      cidr        = "209.29.168.27/32"
       description = "My Galaxy IP"
     },
     {

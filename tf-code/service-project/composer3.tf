@@ -14,6 +14,11 @@ module "composer_v3" {
   # Private-only Composer 3
   use_private_environment = true
 
+  # airflow_config_overrides = {
+  #   "api-composer_auth_user_registration_role" = "Admin"
+  #   "api-rbac_user_registration_role"          = "Admin"
+  # }
+
   # Let the module create the PSC network attachment
   create_network_attachment        = true
   composer_network_attachment_name = each.value.network_attachment_name
