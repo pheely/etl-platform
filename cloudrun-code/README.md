@@ -22,7 +22,7 @@ gcloud auth configure-docker northamerica-northeast1-docker.pkg.dev
 
 ## Build Container Image
 
-```
+```bash
 VERSION="v1"
 IMAGE="northamerica-northeast1-docker.pkg.dev/py-service-01/etl/composer-trigger:${VERSION}"
 docker build --platform linux/amd64 -t ${IMAGE} .
@@ -38,7 +38,6 @@ terraform apply -var 'create_composer_v3=true'
 ```
 
 ## Test
-
 
 ### Call Airflow REST API Directly
 
@@ -66,7 +65,6 @@ It also works when impersonate the cloud run service account.
 ```bash
 SA_TOKEN=$(gcloud auth print-access-token --impersonate-service-account=cloudrun-sa@py-service-01.iam.gserviceaccount.com)
 
-# Try the /api/v2/ endpoint
 curl -X POST "https://7a97e724987b4c05af7e5e2d2ea77dda-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns" \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer ${SA_TOKEN}" \
@@ -100,3 +98,4 @@ Error
   "status": "ERROR"
 }
 ```
+

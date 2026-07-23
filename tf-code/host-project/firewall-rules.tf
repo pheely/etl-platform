@@ -186,3 +186,4 @@ resource "google_compute_firewall" "allow_dataproc_egress_traffic" {
 
 #   description = "Allows the Cloud Run container instances to securely call the Airflow API endpoints on Composer 3 via local network blocks."
 # }
+

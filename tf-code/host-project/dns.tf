@@ -46,7 +46,6 @@ resource "google_dns_record_set" "googleapis_cname" {
   rrdatas = ["private.googleapis.com."]
 }
 
-
 # # CHANGES MADE FOR CLOUD RUN
 
 # # ====================================================================
