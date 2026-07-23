@@ -2,28 +2,29 @@ resource "google_cloud_run_v2_service" "composer_trigger_service" {
   project  = var.project_id
   name     = "composer-trigger-service"
   location = var.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY" # Restrict to internal/perimeter invocations
+#   ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY" # Restrict to internal/perimeter invocations
+  ingress = "INGRESS_TRAFFIC_ALL"
 
   deletion_protection = false
   template {
     # Assign the minimal execution identity
     service_account = google_service_account.cloudrun_sa.email
 
-    vpc_access {
-      #   egress = "ALL_TRAFFIC"
-      egress = "PRIVATE_RANGES_ONLY"
+    # vpc_access {
+    #   #   egress = "ALL_TRAFFIC"
+    #   egress = "PRIVATE_RANGES_ONLY"
 
-      network_interfaces {
-        network    = "projects/py-host-01/global/networks/py-workload-vpc"
-        subnetwork = "projects/py-host-01/regions/northamerica-northeast1/subnetworks/cloudrun-egress-subnet-nane1"
+    #   network_interfaces {
+    #     network    = "projects/py-host-01/global/networks/py-workload-vpc"
+    #     subnetwork = "projects/py-host-01/regions/northamerica-northeast1/subnetworks/cloudrun-egress-subnet-nane1"
 
-        # Explicitly tag the Cloud Run instances
-        tags = ["pga"]
-      }
-    }
+    #     # Explicitly tag the Cloud Run instances
+    #     tags = ["pga"]
+    #   }
+    # }
 
     containers {
-      image = "northamerica-northeast1-docker.pkg.dev/py-service-01/etl/composer-trigger:v3"
+      image = "northamerica-northeast1-docker.pkg.dev/py-service-01/etl/composer-trigger:v1"
 
       # Pass your workflow parameters directly into the container environment
       #   env {
@@ -33,7 +34,7 @@ resource "google_cloud_run_v2_service" "composer_trigger_service" {
 
       env {
         name  = "COMPOSER_WEB_SERVER_URL"
-        value = "https://5eaa404140e04fc1ac120a476b7efb14-dot-northamerica-northeast1.composer.byoid.googleusercontent.com"
+        value = "https://7a97e724987b4c05af7e5e2d2ea77dda-dot-northamerica-northeast1.composer.googleusercontent.com"
       }
 
       env {

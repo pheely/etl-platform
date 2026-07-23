@@ -94,4 +94,3 @@ with models.DAG(
         },
     )
 
-    submit_spark_batch

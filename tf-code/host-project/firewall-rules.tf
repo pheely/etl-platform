@@ -161,28 +161,28 @@ resource "google_compute_firewall" "allow_dataproc_egress_traffic" {
 
 
 
-# CHANGES MADE FOR CLOUD RUN
-# ====================================================================
-# ALLOW Rule: Let Cloud Run talk to the Composer 3 Network Boundary
-# ====================================================================
-resource "google_compute_firewall" "allow_cloud_run_to_composer" {
-  project     = var.project_id
-  name        = "allow-cloudrun-to-composer-3"
-  network     = local.network_name
-  direction   = "INGRESS"
-  priority    = 1000
+# # CHANGES MADE FOR CLOUD RUN
+# # ====================================================================
+# # ALLOW Rule: Let Cloud Run talk to the Composer 3 Network Boundary
+# # ====================================================================
+# resource "google_compute_firewall" "allow_cloud_run_to_composer" {
+#   project     = var.project_id
+#   name        = "allow-cloudrun-to-composer-3"
+#   network     = local.network_name
+#   direction   = "INGRESS"
+#   priority    = 1000
 
-  # Traffic source: Your dedicated Cloud Run egress subnet
-  source_ranges = [local.cloud_run_cidr]
+#   # Traffic source: Your dedicated Cloud Run egress subnet
+#   source_ranges = [local.cloud_run_cidr]
 
-  # Traffic destination: The network endpoints where your Composer 3 architecture hooks in
-  destination_ranges = [local.composer_nane1_primary_range]
+#   # Traffic destination: The network endpoints where your Composer 3 architecture hooks in
+#   destination_ranges = [local.composer_nane1_primary_range]
 
-  # Allow the standard web/secure web traffic vectors used by Airflow API endpoints
-  allow {
-    protocol = "tcp"
-    ports    = ["80", "443"]
-  }
+#   # Allow the standard web/secure web traffic vectors used by Airflow API endpoints
+#   allow {
+#     protocol = "tcp"
+#     ports    = ["80", "443"]
+#   }
 
-  description = "Allows the Cloud Run container instances to securely call the Airflow API endpoints on Composer 3 via local network blocks."
-}
+#   description = "Allows the Cloud Run container instances to securely call the Airflow API endpoints on Composer 3 via local network blocks."
+# }

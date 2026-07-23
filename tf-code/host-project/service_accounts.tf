@@ -21,4 +21,5 @@ resource "google_compute_subnetwork_iam_member" "cloudrun_agent_shared_vpc_user"
   subnetwork = "cloudrun-egress-subnet-nane1"
   role       = "roles/compute.networkUser"
   member     = "serviceAccount:service-${data.google_project.service_project.number}@serverless-robot-prod.iam.gserviceaccount.com"
+  depends_on = [ google_compute_subnetwork.cloud_run_egress_subnet ]
 }

@@ -20,11 +20,10 @@ python -m unittest discover -s test -p "test_*.py"
 gcloud auth configure-docker northamerica-northeast1-docker.pkg.dev
 ```
 
-
 ## Build Container Image
 
 ```
-VERSION="v3"
+VERSION="v1"
 IMAGE="northamerica-northeast1-docker.pkg.dev/py-service-01/etl/composer-trigger:${VERSION}"
 docker build --platform linux/amd64 -t ${IMAGE} .
 docker push ${IMAGE}
@@ -40,6 +39,48 @@ terraform apply -var 'create_composer_v3=true'
 
 ## Test
 
+
+### Call Airflow REST API Directly
+
+Principal: `admin@pycloudlabs.cc`
+
+```bash
+curl -X POST "https://7a97e724987b4c05af7e5e2d2ea77dda-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer $(gcloud auth print-access-token)" \
+-d '{
+    "dag_run_id":"manual__2026-07-23T12-00-00",
+    "logical_date": "2026-07-23T21:00:00Z",
+    "conf": {}
+  }'
+```
+
+Response:
+
+```json
+{"dag_run_id":"manual__2026-07-23T12-00-00","dag_id":"dataproc_serverless_production_pipeline","logical_date":"2026-07-23T21:00:00Z","queued_at":"2026-07-23T20:30:40.316914Z","start_date":null,"end_date":null,"duration":null,"data_interval_start":"2026-07-23T21:00:00Z","data_interval_end":"2026-07-23T21:00:00Z","run_after":"2026-07-23T20:30:40.268725Z","last_scheduling_decision":null,"run_type":"manual","state":"queued","triggered_by":"rest_api","triggering_user_name":"accounts.google.com:102913931299711603490","conf":{},"note":null,"dag_versions":[{"id":"019f90a0-4d86-703a-89c9-27977a98ba54","version_number":1,"dag_id":"dataproc_serverless_production_pipeline","bundle_name":"dags-folder","bundle_version":null,"created_at":"2026-07-23T20:17:32.550241Z","dag_display_name":"dataproc_serverless_production_pipeline","bundle_url":null}],"bundle_version":null,"dag_display_name":"dataproc_serverless_production_pipeline"}
+```
+
+It also works when impersonate the cloud run service account.
+
+```bash
+SA_TOKEN=$(gcloud auth print-access-token --impersonate-service-account=cloudrun-sa@py-service-01.iam.gserviceaccount.com)
+
+# Try the /api/v2/ endpoint
+curl -X POST "https://7a97e724987b4c05af7e5e2d2ea77dda-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer ${SA_TOKEN}" \
+-d '{
+    "dag_run_id":"manual__2026-07-23T12-00-99",
+    "logical_date": "2026-07-22T21:00:00Z",
+    "conf": {}
+  }'
+```
+
+### Callling Cloud Run Service which Calls Airflow API
+
+Principal: `admin@pycloudlabs.cc`
+
 ```bash
 SERVICE_URL=$(gcloud run services describe composer-trigger-service \
   --platform managed \
@@ -51,29 +92,11 @@ curl -X POST "${SERVICE_URL}/trigger-dataproc-dag" \
   -H "Content-Type: application/json"
 ```
 
+Error
 
-```bash
-TOKEN=$(gcloud auth print-identity-token \
-  --impersonate-service-account=py-service-01-cloudrun-sa@py-service-01.iam.gserviceaccount.com \
-  --audiences=https://5eaa404140e04fc1ac120a476b7efb14-dot-northamerica-northeast1.composer.googleusercontent.com)
-
-curl -X POST \
-https://5eaa404140e04fc1ac120a476b7efb14-dot-northamerica-northeast1.composer.googleusercontent.com/airflow/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns \
--H "Content-Type: application/json" \
--H "Authorization: Bearer ${TOKEN}" \
--d '{
-    "dag_run_id": "manual__2026-07-19T12:00:00",
-    "conf": {
-      "example_key": "example_value"
-    }
-  }'
-
-TOKEN=$(gcloud auth print-identity-token \
-  --impersonate-service-account=py-service-01-cloudrun-sa@py-service-01.iam.gserviceaccount.com \
-  --audiences=https://5eaa404140e04fc1ac120a476b7efb14-dot-northamerica-northeast1.composer.googleusercontent.com)
-
-echo "$TOKEN" | cut -d. -f2 | python3 -c "import sys, base64, json; print(base64.urlsafe_b64decode(sys.stdin.read() + '===').decode())" | jq
-
-TOKEN2=$(gcloud auth print-identity-token)
-echo "$TOKEN2" | cut -d. -f2 | python3 -c "import sys, base64, json; print(base64.urlsafe_b64decode(sys.stdin.read() + '===').decode())" | jq
+```json
+{
+  "message": "403 Client Error: Forbidden for url: https://7a97e724987b4c05af7e5e2d2ea77dda-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns",
+  "status": "ERROR"
+}
 ```

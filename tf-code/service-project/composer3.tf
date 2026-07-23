@@ -11,18 +11,13 @@ module "composer_v3" {
   region                   = each.value.region
   composer_service_account = google_service_account.composer_sa.email
 
-  airflow_config_overrides = {
-    "composer_auth_user_registration_role" = "Op"
-    "composer_auth_admin_users" = "admin@pycloudlabs.cc"
-  }
-  
   # Private-only Composer 3
   use_private_environment = true
 
-  # airflow_config_overrides = {
-  #   "api-composer_auth_user_registration_role" = "Admin"
-  #   "api-rbac_user_registration_role"          = "Admin"
-  # }
+  airflow_config_overrides = {
+    "api-composer_auth_user_registration_role" = "Admin"
+    # "api-rbac_user_registration_role"          = "Admin"
+  }
 
   # Let the module create the PSC network attachment
   create_network_attachment        = true

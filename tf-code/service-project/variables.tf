@@ -48,13 +48,17 @@ variable "airflow_ui_allowed_ip_ranges" {
   }))
   default = [
     {
+      cidr = "0.0.0.0/0"
+      description = "allow all"
+    },
+    {
       cidr        = "209.29.168.27/32"
       description = "My Galaxy IP"
     },
     {
       cidr        = "99.229.154.65/32"
       description = "My Home IP"
-    }
+    },
   ]
 }
 
@@ -127,7 +131,7 @@ variable "etl_job_status_pubsub_topic_name" {
 variable "cloudrun_service_account_id" {
   description = "The id of Cloud Run service account"
   type        = string
-  default     = "py-service-01-cloudrun-sa"
+  default     = "cloudrun-sa"
 }
 
 variable "artifact_registry_id" {
@@ -139,11 +143,11 @@ variable "artifact_registry_id" {
 variable "artifact_registry_keyring_name" {
   description = "The name of GAR keyring"
   type        = string
-  default     = "gar_keyring"
+  default     = "ar_keyring"
 }
 
 variable "artifact_registry_key_name" {
   description = "The name of GAR key"
   type        = string
-  default     = "gar_key"
+  default     = "ar_key"
 }

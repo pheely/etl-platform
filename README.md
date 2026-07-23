@@ -6,7 +6,7 @@
 
 [Set up a VPC Service Controls](doc/vpcsc.md)
 
-[Grant Users Viewer Role](doc/viwer.md)
+[Grant Users Viewer Role](doc/viewer.md)
 
 [Configure a Share VPC](doc/shared-vpc.md)
 

@@ -63,8 +63,31 @@ resource "google_service_account_iam_member" "composer_sa_impersonate_dataproc_s
 }
 
 # CloudRun SA permissions
+resource "google_project_iam_member" "cloudrun_sa_composer_admin" {
+    project = var.project_id
+    # Let try a broad access first and then tighten up.
+    # role    = "roles/composer.user"
+    # role    = "roles/composer.view"
+    # role    = "roles/composer.environmentViewer"
+    role    = "roles/composer.admin"
+    member  = "serviceAccount:${google_service_account.cloudrun_sa.email}"
+}
+
 resource "google_project_iam_member" "cloudrun_sa_composer_user" {
     project = var.project_id
     role    = "roles/composer.user"
     member  = "serviceAccount:${google_service_account.cloudrun_sa.email}"
 }
+
+resource "google_project_iam_member" "cloudrun_sa_composer_viewer" {
+    project = var.project_id
+    role    = "roles/composer.viewer"
+    member  = "serviceAccount:${google_service_account.cloudrun_sa.email}"
+}
+
+resource "google_project_iam_member" "cloudrun_sa_composer_iap" {
+    project = var.project_id
+    role    = "roles/iap.httpsResourceAccessor"
+    member  = "serviceAccount:${google_service_account.cloudrun_sa.email}"
+}
+
