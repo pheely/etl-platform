@@ -12,6 +12,8 @@ python -m unittest discover -s tests -p "test_*.py"
 
 ## Deploy DAGs
 
+For this particular DAG, all dependencies are preinstalled on Composer environment. The content of `requirement_runtime.txt` would be empty.
+
 ```bash
 COMPOSER_DAG_BUCKET=$(gcloud composer environments describe composer-nane1 \
     --project="py-service-01" \

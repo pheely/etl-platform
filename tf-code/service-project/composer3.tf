@@ -16,7 +16,8 @@ module "composer_v3" {
 
   airflow_config_overrides = {
     "api-composer_auth_user_registration_role" = "Admin"
-    # "api-rbac_user_registration_role"          = "Admin"
+    "core-default_ui_timezone" = "America/Toronto"
+    "webserver-default_ui_timezone" = "America/Toronto"
   }
 
   # Let the module create the PSC network attachment

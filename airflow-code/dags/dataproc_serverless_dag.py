@@ -1,12 +1,24 @@
 import datetime
+import json
 from airflow import models
 from airflow.providers.google.cloud.operators.dataproc import DataprocCreateBatchOperator
+from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessageOperator
 from google.cloud import storage
+
+
+# TODO: use environment variables instead of hardcoding
+# to support the same GAD code across dev, ist, uat,prod
+# Composer environments
+# 1. Set environment variables in Composer
+# 2. Read OS environment variables in DAG: os.environ.get("VAR_NAME", DEFAULT)
 
 # --- Core Platform Configurations ---
 PROJECT_ID = "py-service-01"
 REGION = "northamerica-northeast1"
 SUBNETWORK_URI = f"projects/py-host-01/regions/{REGION}/subnetworks/dataproc-subnet-nane1"
+
+# --- Pub/Sub Notification Configuration ---
+PUBSUB_TOPIC = "etl-job-status"
 
 # --- Identities & Security Configurations ---
 # The specific service account you assigned the Dataproc Worker role to
@@ -47,6 +59,56 @@ def get_runtime_properties():
     return base_properties
 
 
+# --- Pub/Sub Notification Callbacks ---
+def _publish_pubsub_notification(context: dict, status: str) -> None:
+    """Helper function to construct and publish the Pub/Sub message."""
+    dag_run = context.get("dag_run")
+    logical_date = context.get("logical_date")
+
+    payload = {
+        "pipeline_name": "dataproc_serverless_production_pipeline",
+        "dag_id": context.get("dag").dag_id if context.get("dag") else None,
+        "run_id": dag_run.run_id if dag_run else None,
+        "status": status,  # "SUCCESS" or "FAILED"
+        "project_id": PROJECT_ID,
+        "region": REGION,
+        "logical_date": logical_date.isoformat() if logical_date else None,
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+
+    messages = [
+        {
+            "data": json.dumps(payload).encode("utf-8"),
+            "attributes": {
+                "status": status,
+                "project_id": PROJECT_ID,
+                "pipeline": "dataproc_serverless",
+            },
+        }
+    ]
+
+    # Execute the PubSub operator inside the callback context
+    pubsub_task = PubSubPublishMessageOperator(
+        task_id=f"pubsub_notify_{status.lower()}",
+        project_id=PROJECT_ID,
+        topic=PUBSUB_TOPIC,
+        messages=messages,
+    )
+
+    print("Publishing message to Pubsub topic")
+    pubsub_task.execute(context=context)
+
+
+def on_dag_success(context: dict) -> None:
+    """Callback executed when the DAG completes successfully."""
+    _publish_pubsub_notification(context, status="SUCCESS")
+
+
+def on_dag_failure(context: dict) -> None:
+    """Callback executed when any task in the DAG fails."""
+    _publish_pubsub_notification(context, status="FAILED")
+
+
 DEFAULT_ARGS = {
     "owner": "data-engineering",
     "start_date": datetime.datetime(2026, 1, 1),
@@ -61,6 +123,10 @@ with models.DAG(
     schedule="@daily",
     catchup=False,
     tags=["dataproc", "serverless", "production", "cmek"],
+    # Architecture decision: using callbacks or explicit operator node
+    # Callback pattern is clean and standard way
+    on_success_callback=on_dag_success,
+    on_failure_callback=on_dag_failure,
 ) as dag:
 
     submit_spark_batch = DataprocCreateBatchOperator(
@@ -93,4 +159,3 @@ with models.DAG(
             },
         },
     )
-

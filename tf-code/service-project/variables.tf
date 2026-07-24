@@ -151,3 +151,9 @@ variable "artifact_registry_key_name" {
   type        = string
   default     = "ar_key"
 }
+
+variable "etl_job_status_subscription_name" {
+  description = "ETL job status pubsub subscription"
+  type = string
+  default = "etl_status_sub"
+}
