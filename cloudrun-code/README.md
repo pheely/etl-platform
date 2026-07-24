@@ -23,7 +23,7 @@ gcloud auth configure-docker northamerica-northeast1-docker.pkg.dev
 ## Build Container Image
 
 ```bash
-VERSION="v1"
+VERSION="v2"
 IMAGE="northamerica-northeast1-docker.pkg.dev/py-service-01/etl/composer-trigger:${VERSION}"
 docker build --platform linux/amd64 -t ${IMAGE} .
 docker push ${IMAGE}
@@ -44,11 +44,11 @@ terraform apply -var 'create_composer_v3=true'
 Principal: `admin@pycloudlabs.cc`
 
 ```bash
-curl -X POST "https://7a97e724987b4c05af7e5e2d2ea77dda-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns" \
+curl -X POST "https://f3cc5bb0e516408fbe0852fcdde2bb10-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns" \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer $(gcloud auth print-access-token)" \
 -d '{
-    "dag_run_id":"manual__2026-07-23T12-00-00",
+    "dag_run_id":"manual__2026-07-21T12-00-00",
     "logical_date": "2026-07-23T21:00:00Z",
     "conf": {}
   }'
@@ -65,7 +65,7 @@ It also works when impersonate the cloud run service account.
 ```bash
 SA_TOKEN=$(gcloud auth print-access-token --impersonate-service-account=cloudrun-sa@py-service-01.iam.gserviceaccount.com)
 
-curl -X POST "https://7a97e724987b4c05af7e5e2d2ea77dda-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns" \
+curl -X POST "https://f3cc5bb0e516408fbe0852fcdde2bb10-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns" \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer ${SA_TOKEN}" \
 -d '{
@@ -73,7 +73,16 @@ curl -X POST "https://7a97e724987b4c05af7e5e2d2ea77dda-dot-northamerica-northeas
     "logical_date": "2026-07-22T21:00:00Z",
     "conf": {}
   }'
+
+
+SA_TOKEN=$(gcloud auth print-access-token --impersonate-service-account=cloudrun-sa@py-service-01.iam.gserviceaccount.com)
+
+curl "https://f3cc5bb0e516408fbe0852fcdde2bb10-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/version" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer ${SA_TOKEN}"
 ```
+
+
 
 ### Callling Cloud Run Service which Calls Airflow API
 
@@ -99,3 +108,14 @@ Error
 }
 ```
 
+
+```bash
+SERVICE_URL=$(gcloud run services describe composer-trigger-service \
+  --platform managed \
+  --region northamerica-northeast1 \
+  --format 'value(status.url)')
+
+curl "${SERVICE_URL}/" \
+  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  -H "Content-Type: application/json"
+```

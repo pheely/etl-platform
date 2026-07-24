@@ -24,7 +24,7 @@ resource "google_cloud_run_v2_service" "composer_trigger_service" {
     # }
 
     containers {
-      image = "northamerica-northeast1-docker.pkg.dev/py-service-01/etl/composer-trigger:v1"
+      image = "northamerica-northeast1-docker.pkg.dev/py-service-01/etl/composer-trigger:v2"
 
       # Pass your workflow parameters directly into the container environment
       #   env {
@@ -34,7 +34,7 @@ resource "google_cloud_run_v2_service" "composer_trigger_service" {
 
       env {
         name  = "COMPOSER_WEB_SERVER_URL"
-        value = "https://7a97e724987b4c05af7e5e2d2ea77dda-dot-northamerica-northeast1.composer.googleusercontent.com"
+        value = "https://f3cc5bb0e516408fbe0852fcdde2bb10-dot-northamerica-northeast1.composer.googleusercontent.com"
       }
 
       env {
