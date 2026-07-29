@@ -20,7 +20,9 @@ Current status: the DAG can be triggered manually via Airflow UI or calling Airf
 
 [Create a Custom VPC](doc/vpc.md)
 
-[Set up Subnets for Dataproc Serverless](doc/dataproc-subnet.md)
+[Creating Resources required for Dataproc Serverless Batch](doc/dataproc-resources.md)
+
+[Create a DAG for Dataproc Serverless Batch](doc/dag.md)
 
 [Set up Subnets for Cloud Composer](doc/composer-subnet.md)
 
@@ -28,4 +30,4 @@ Current status: the DAG can be triggered manually via Airflow UI or calling Airf
 
 [Accessing Airflow UI](doc/airflow-ui.md)
 
-[Triggering DAG via Airflow REST API](doc/airflow-api.md)
+[Triggering DAG Run via Airflow REST API](doc/airflow-api.md)
