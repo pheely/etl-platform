@@ -1,0 +1,245 @@
+import os
+from typing import Any
+import jwt
+import flask
+import google.auth
+import google.auth.transport.requests
+from google.auth.compute_engine import Credentials as ComputeEngineCredentials
+from google.auth.transport.requests import AuthorizedSession
+import requests
+import json
+from datetime import datetime, timezone
+from google.auth.transport.requests import Request
+from google.oauth2 import id_token
+from flask import jsonify
+
+app = flask.Flask(__name__)
+
+COMPOSER_WEB_SERVER_URL = os.environ.get("COMPOSER_WEB_SERVER_URL", "https://df5b7413a4e843ddaa2cea0f3d98e1be-dot-northamerica-northeast1.composer.googleusercontent.com")
+DAG_ID = os.environ.get("DAG_ID", "dataproc_serverless_production_pipeline")
+
+
+# This returns the OIDC identity token of the Cloud Run service account
+# It's not used for connecting to Composer web server
+def get_id_token(audience):
+    auth_req = Request()
+    # Set audience to COMPOSER_WEB_SERVER_URL
+    token = id_token.fetch_id_token(auth_req, audience)
+
+    decoded = jwt.decode(token, options={"verify_signature": False})
+    print(f">>> DEBUG: [99] decoded jwt: {decoded}")
+
+    return f"Bearer {token}"
+
+
+# Try to connect to a public API
+# If successful, a fact json object is returned
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def forward_request(path):
+    # Fallback to 'fact' if you just call the root URL
+    target_path = path if path else "fact"
+    upstream_url = f"https://catfact.ninja/{target_path}"
+
+    try:
+        print(f">>>DEBUG: Forwarding request to: {upstream_url}")
+        response = requests.get(upstream_url, timeout=5)
+        response.raise_for_status()
+
+        # Return the JSON response
+        return jsonify(response.json())
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error reaching {upstream_url}: {e.response.status_code} - {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/airflow-ui")
+def ui():
+    upstream_url = COMPOSER_WEB_SERVER_URL
+
+    print(f">>>DEBUG: Forwarding request to: {upstream_url}")
+    response = requests.get(upstream_url, timeout=5)
+    if (response.status_code == 200):
+        print(f">>> DEBUG: Reached to {upstream_url}, connection is ok")
+    else:
+        print(f">>> DEBUG: Endpoint ({upstream_url}) returned status {response.status_code}: {response.text[:200]}")
+
+
+# This calls Composer Web API to trigger a DAG run
+@app.route("/trigger-dataproc-dag", methods=["POST"])
+def trigger_dag():
+    if not COMPOSER_WEB_SERVER_URL or not DAG_ID:
+        print(">>> DEBUG: Error: Missing critical environment variables!")
+        return flask.jsonify({
+            "status": "ERROR",
+            "message": "Missing critical environment variables: COMPOSER_WEB_SERVER_URL or DAG_ID."
+        }), 500
+
+    print("\n>>> ==================== NEW TRIGGER REQUEST ====================")
+    print(f">>> DEBUG: Airflow URL: {COMPOSER_WEB_SERVER_URL}")
+    print(f">>> DEBUG: DAG ID: {DAG_ID}")
+
+    try:
+        # 1. Fetch token - use an identity token
+        token = get_id_token(COMPOSER_WEB_SERVER_URL)
+
+        # 2. Build REST API target path
+        endpoint_url = f"{COMPOSER_WEB_SERVER_URL}/airflow/api/v2/dags/{DAG_ID}/dagRuns"
+        print(f">>> DEBUG: Assembled Endpoint Target URI: {endpoint_url}")
+
+        headers = {
+            # "Authorization": bearer_token,
+            "Authorization": token,
+            "Content-Type": "application/json"
+        }
+
+        json_payload = {
+            "dag_run_id": f"manual__{datetime.now().isoformat()}",
+            "conf": {}
+        }
+
+        print(f">>> DEBUG: request headers: {headers}")
+        print(f">>> DEBUG: request json_payload: {json.dumps(json_payload, indent=2)}")
+        response = requests.post(endpoint_url, headers=headers, json=json_payload)
+
+        # 3. Collect response insights
+        print(f">>> DEBUG: Response Status Code received: {response.status_code}")
+        print(f">>> DEBUG: Response Headers: {dict(response.headers)}")
+        print(f">>> DEBUG: Raw Content Body Snippet: {response.text[:1500]}")
+
+        if response.status_code == 201:
+            print(">>> DEBUG: Match Success! 201 Created returned.")
+            return flask.jsonify({
+                "status": "SUCCESS",
+                "message": f"Successfully triggered DAG '{DAG_ID}'",
+                "details": response.json()
+            }), 201
+        else:
+            print(f">>> DEBUG: Failure State reached. Status Code: {response.status_code}")
+            return flask.jsonify({
+                "status": "FAILED",
+                "status_code": response.status_code,
+                "error": response.text
+            }), response.status_code
+
+    except Exception as e:
+        print(f">>> DEBUG: Global Exception caught inside container: {str(e)}")
+        return flask.jsonify({"status": "ERROR", "message": str(e)}), 500
+
+
+@app.route("/trigger-dataproc-dag-oauth2", methods=["POST"])
+def trigger_dag_with_oath2_token() -> None:
+
+    event_data = {}
+    web_server_url = COMPOSER_WEB_SERVER_URL
+    airflow_major_version = "3"
+
+    dag_id = DAG_ID
+
+    # The data interval for which to run the DAG
+    # Format example: "2026-07-15T15:00:00Z"
+    now = datetime.now(timezone.utc)
+    logical_date = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    try:
+        return trigger_dag_request(web_server_url, airflow_major_version, dag_id, event_data, logical_date)
+    except Exception as e:
+        print(f">>> DEBUG: Global Exception caught inside container: {str(e)}")
+        return flask.jsonify({"status": "ERROR", "message": str(e)}), 500
+
+
+# Prepare API endpoint and payload; handles errors
+def trigger_dag_request(
+    web_server_url: str, airflow_version: str, dag_id: str, data: dict, logical_date: str
+) -> str:
+    """
+    Make a request to trigger a dag using the Airflow REST API.
+    https://airflow.apache.org/docs/apache-airflow/stable/stable-rest-api-ref.html
+
+    Args:
+      web_server_url: The URL of the Airflow web server.
+      airflow_version: Major version of Airflow. Determines the API endpoint.
+      dag_id: The DAG ID.
+      data: Additional configuration parameters for the DAG run (json).
+      logical_date: Data interval for which to run the DAG.
+    """
+
+    if airflow_version == "2":
+        endpoint = f"api/v1/dags/{dag_id}/dagRuns"
+    elif airflow_version == "3":
+        endpoint = f"api/v2/dags/{dag_id}/dagRuns"
+    else:
+        raise ValueError(
+          f"Invalid Airflow version: {airflow_version}. Expected: 2 or 3.")
+
+    # hardcode the url for now
+    # request_url = f"{web_server_url}/airflow/{endpoint}"
+    request_url = f"https://7a97e724987b4c05af7e5e2d2ea77dda-dot-northamerica-northeast1.composer.byoid.googleusercontent.com/api/v1/dags/{dag_id}/dagRuns"
+
+    json_data = {
+        "dag_run_id": f"manual__{datetime.now().isoformat()}",
+        "conf": data,
+        "logical_date": logical_date,
+    }
+
+    response = make_managed_airflow_web_server_request(
+        request_url, method="POST", json=json_data
+    )
+
+    print(f">>>DEBUG: request body: {response.request.body}")
+
+    if response.status_code == 201:
+        print(">>> DEBUG: Match Success! 201 Created returned.")
+        return flask.jsonify({
+            "status": "SUCCESS",
+            "message": f"Successfully triggered DAG '{DAG_ID}'",
+            "details": response.json()
+        }), 201
+    else:
+        print(f">>> DEBUG: Failure State reached. Status Code: {response.status_code}")
+        return flask.jsonify({
+            "status": "FAILED",
+            "status_code": response.status_code,
+            "error": response.text
+        }), response.status_code
+
+
+# Retrieve the access token and make the API call
+def make_managed_airflow_web_server_request(
+    url: str, method: str = "GET", **kwargs: Any
+) -> google.auth.transport.Response:
+    """
+    Make a request to environment's web server.
+    Args:
+      url: The URL to fetch.
+      method: The request method to use ('GET', 'OPTIONS', 'HEAD', 'POST',
+      'PUT', 'PATCH', 'DELETE')
+      **kwargs: Any of the parameters defined for the request function:
+                https://github.com/requests/requests/blob/master/requests/api.py
+                  If no timeout is provided, it is set to 90 by default.
+    """
+
+    AUTH_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
+    CREDENTIALS, _ = google.auth.default(scopes=[AUTH_SCOPE])
+
+    authed_session = AuthorizedSession(CREDENTIALS)
+
+    # Set the default timeout, if missing
+    if "timeout" not in kwargs:
+        kwargs["timeout"] = 90
+
+    print(f">>>DEBUG: endpoint url: {url}")
+
+    resp = authed_session.request(method, url, **kwargs)
+
+    print(f">>>DEBUG: scopes: {authed_session.credentials.scopes}")
+    print(f">>>DEBUG: token: {authed_session.credentials.token}")
+    print(f">>>DEBUG: headers: {authed_session.headers}")
+    print(f">>>DEBUG: Transmitted Headers: {dict(resp.request.headers)}")
+
+    return resp
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
