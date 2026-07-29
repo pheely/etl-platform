@@ -48,7 +48,7 @@ variable "airflow_ui_allowed_ip_ranges" {
   }))
   default = [
     {
-      cidr = "0.0.0.0/0"
+      cidr        = "0.0.0.0/0"
       description = "allow all"
     },
     {
@@ -154,6 +154,6 @@ variable "artifact_registry_key_name" {
 
 variable "etl_job_status_subscription_name" {
   description = "ETL job status pubsub subscription"
-  type = string
-  default = "etl_status_sub"
+  type        = string
+  default     = "etl_status_sub"
 }

@@ -2,7 +2,7 @@ resource "google_cloud_run_v2_service" "composer_trigger_service" {
   project  = var.project_id
   name     = "composer-trigger-service"
   location = var.region
-#   ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY" # Restrict to internal/perimeter invocations
+  #   ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY" # Restrict to internal/perimeter invocations
   ingress = "INGRESS_TRAFFIC_ALL"
 
   deletion_protection = false
@@ -24,7 +24,7 @@ resource "google_cloud_run_v2_service" "composer_trigger_service" {
     # }
 
     containers {
-      image = "northamerica-northeast1-docker.pkg.dev/py-service-01/etl/composer-trigger:v2"
+      image = "northamerica-northeast1-docker.pkg.dev/py-service-01/etl/composer-trigger:v4"
 
       # Pass your workflow parameters directly into the container environment
       #   env {

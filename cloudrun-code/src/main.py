@@ -12,6 +12,8 @@ from google.auth import impersonated_credentials
 from google.auth.transport.requests import AuthorizedSession, Request
 import requests
 import flask
+from flask import jsonify, request
+
 from datetime import datetime, timezone
 
 # Following best practices, these credentials should be
@@ -20,15 +22,25 @@ from datetime import datetime, timezone
 AUTH_SCOPES = [
     "https://www.googleapis.com/auth/cloud-platform",
     "https://www.googleapis.com/auth/userinfo.email",
-    "openid"
+    "openid",
 ]
 
-CREDENTIALS, _ = google.auth.default(scopes=AUTH_SCOPES)
+try:
+    CREDENTIALS, _ = google.auth.default(scopes=AUTH_SCOPES)
+except Exception as exc:  # pragma: no cover - defensive for test/runtime environments
+    CREDENTIALS = None
+    print(f">>>DEBUG: default credentials unavailable: {exc}")
 
-# For debugging 403 issue, remove it later
-CREDENTIALS.refresh(Request())
-print(f">>>DEBUG: cred.email: {CREDENTIALS.service_account_email}")
-print(f"credential type: {type(CREDENTIALS)}")
+if CREDENTIALS is not None:
+    try:
+        CREDENTIALS.refresh(Request())
+    except Exception as exc:  # pragma: no cover - defensive for test/runtime environments
+        print(f">>>DEBUG: credential refresh failed: {exc}")
+
+service_account_email = getattr(CREDENTIALS, "service_account_email", None)
+if service_account_email:
+    print(f">>>DEBUG: cred.email: {service_account_email}")
+print(f"credential type: {type(CREDENTIALS).__name__ if CREDENTIALS else 'None'}")
 
 # source_creds, _ = google.auth.default()
 # target_creds = impersonated_credentials.Credentials(
@@ -74,7 +86,9 @@ def make_composer3_web_server_request(
     return resp
 
 
-def trigger_dag(web_server_url: str, dag_id: str, data: dict, logical_date: str, dag_run_id: str) -> str:
+def trigger_dag(
+    web_server_url: str, dag_id: str, data: dict, logical_date: str, dag_run_id: str
+) -> str:
     """
     Make a request to trigger a DAG using the Airflow REST API v2.
     https://airflow.apache.org/docs/apache-airflow/stable/stable-rest-api-ref.html
@@ -87,7 +101,11 @@ def trigger_dag(web_server_url: str, dag_id: str, data: dict, logical_date: str,
 
     endpoint = f"api/v2/dags/{dag_id}/dagRuns"
     request_url = f"{web_server_url}/{endpoint}"
-    json_data = {"dag_run_id": f"manual__{dag_run_id}", "conf": data, "logical_date": logical_date}
+    json_data = {
+        "dag_run_id": f"manual__{dag_run_id}",
+        "conf": data,
+        "logical_date": logical_date,
+    }
 
     response = make_composer3_web_server_request(
         request_url, method="POST", json=json_data
@@ -117,28 +135,31 @@ def trigger():
     DAG_ID = os.environ.get("DAG_ID", "dataproc_serverless_production_pipeline")
 
     if not COMPOSER_WEB_SERVER_URL or not DAG_ID:
-        return flask.jsonify({
-            "status": "ERROR",
-            "message": "Missing critical environment variables: COMPOSER_WEB_SERVER_URL or DAG_ID."
-        }), 500
+        return flask.jsonify(
+            {
+                "status": "ERROR",
+                "message": "Missing critical environment variables: COMPOSER_WEB_SERVER_URL or DAG_ID.",
+            }
+        ), 500
 
     # Replace with configuration parameters for the DAG run.
-    dag_config = {
-        "your-key": "your-value"
-    }
+    dag_config = {"your-key": "your-value"}
 
     # Replace with the data interval for which to run the DAG
     logical_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     dag_run_id = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
 
     try:
-        return trigger_dag(
+        response_text = trigger_dag(
             web_server_url=COMPOSER_WEB_SERVER_URL,
             dag_id=DAG_ID,
             data=dag_config,
             logical_date=logical_date,
-            dag_run_id=dag_run_id
+            dag_run_id=dag_run_id,
         )
+        return flask.jsonify(
+            {"status": "SUCCESS", "message": f"Triggered DAG {DAG_ID}", "dag_id": DAG_ID}
+        ), 200
     except Exception as e:
         return flask.jsonify({"status": "ERROR", "message": str(e)}), 500
 
@@ -151,10 +172,12 @@ def composer_get(path):
     COMPOSER_WEB_SERVER_URL = os.environ.get("COMPOSER_WEB_SERVER_URL")
 
     if not COMPOSER_WEB_SERVER_URL:
-        return flask.jsonify({
-            "status": "ERROR",
-            "message": "Missing critical environment variables: COMPOSER_WEB_SERVER_URL."
-        }), 500
+        return flask.jsonify(
+            {
+                "status": "ERROR",
+                "message": "Missing critical environment variables: COMPOSER_WEB_SERVER_URL.",
+            }
+        ), 500
 
     endpoint = f"api/v2/{target_path}"
     request_url = f"{COMPOSER_WEB_SERVER_URL}/{endpoint}"
@@ -168,3 +191,50 @@ def composer_get(path):
         response.raise_for_status()
     else:
         return response.text
+
+
+@app.route("/get", defaults={"path": ""})
+@app.route("/get/<path:path>")
+def get_fact(path):
+    upstream_path = path if path else ""
+    upstream_query = request.query_string.decode("utf-8")
+    upstream_url = f"https://httpbin.org/get/{upstream_path}" if upstream_path else "https://httpbin.org/get"
+
+    if upstream_query:
+        upstream_url = f"{upstream_url}?{upstream_query}"
+
+    try:
+        print(f">>>DEBUG: Forwarding request to: {upstream_url}")
+        response = requests.get(upstream_url, timeout=5)
+        response.raise_for_status()
+
+        return jsonify(response.json())
+
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Error reaching {upstream_url}: {status_code} - {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/post", defaults={"path": ""}, methods=["POST"])
+@app.route("/post/<path:path>", methods=["POST"])
+def post_fact(path):
+
+    upstream_path = path if path else ""
+    upstream_query = request.query_string.decode("utf-8")
+    upstream_url = f"https://httpbin.org/post/{upstream_path}" if upstream_path else "https://httpbin.org/post"
+
+    if upstream_query:
+        upstream_url = f"{upstream_url}?{upstream_query}"
+
+    try:
+        print(f">>>DEBUG: Forwarding POST request to: {upstream_url}")
+        response = requests.post(upstream_url, json=request.get_json(silent=True), timeout=5)
+        response.raise_for_status()
+
+        return jsonify(response.json())
+
+    except requests.exceptions.RequestException as e:
+        status_code = getattr(e.response, "status_code", 500)
+        print(f"Error reaching {upstream_url}: {status_code} - {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500

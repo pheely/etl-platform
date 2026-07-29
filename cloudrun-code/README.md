@@ -23,7 +23,7 @@ gcloud auth configure-docker northamerica-northeast1-docker.pkg.dev
 ## Build Container Image
 
 ```bash
-VERSION="v2"
+VERSION="v4"
 IMAGE="northamerica-northeast1-docker.pkg.dev/py-service-01/etl/composer-trigger:${VERSION}"
 docker build --platform linux/amd64 -t ${IMAGE} .
 docker push ${IMAGE}

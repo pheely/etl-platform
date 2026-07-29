@@ -37,7 +37,6 @@ Notice that the `username` has the form of `accounts.google.com:NUMERIC_USER_ID`
 # for user account
 gcloud auth print-identity-token | python3 -c "import sys, json, base64; token=sys.stdin.read().split('.')[1]; print(json.loads(base64.b64decode(token + '=' * (-len(token) % 4)).decode('utf-8'))['sub'])"
 
-# or
 TOKEN=$(gcloud auth print-identity-token);curl "https://oauth2.googleapis.com/tokeninfo?id_token=${TOKEN}" | grep sub
 
 # or

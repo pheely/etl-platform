@@ -30,8 +30,8 @@ locals {
 
 
 data "google_compute_subnetwork" "composer_subnets" {
-    for_each = local.composer_envs
-    name    = each.value.subnetwork_name
-    region  = each.value.region
-    project = var.host_project_id
+  for_each = local.composer_envs
+  name     = each.value.subnetwork_name
+  region   = each.value.region
+  project  = var.host_project_id
 }

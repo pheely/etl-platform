@@ -1,4 +1,12 @@
-# Cloud Lab Environment
+# Cloud Lab Environment for ETL Platform
+
+This repo contains code for provisioning necessary cloud resources to support a platform that can run any Spark batch jobs.
+
+The platform is running on Google Cloud Platform with a share VPC under a VPC service perimeter.
+
+A sample pyspark job is used to validate the infrastructure.
+
+Current status: the DAG can be triggered manually via Airflow UI or calling Airflow API directly. The Cloud Run triggering the DAG by calling Airflow API is not working due to a 403 issues - see [this](./cloudrun-code/README.md) for details.
 
 [Set up an organization](doc/organization.md)
 
@@ -20,3 +28,4 @@
 
 [Accessing Airflow UI](doc/airflow-ui.md)
 
+[Triggering DAG via Airflow REST API](doc/airflow-api.md)
