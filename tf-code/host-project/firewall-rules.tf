@@ -143,6 +143,34 @@ resource "google_compute_firewall" "allow_dataproc_ingress_traffic" {
     }
 }
 
+# This rule is suggested by a contractor. I thought it may help with the Cloud Run to
+# Composer 3 connectivity issue, but it did not. I will leave it here for now in case
+# we need it later.
+resource "google_compute_firewall" "allow_gfe_ingress_to_composer_subnet" {
+    name    = "allow-gfe-ingress-to-composer-subnet"
+    project = var.project_id
+    network = local.network_name
+    direction = "INGRESS"
+    priority = 1000
+    description = "Allow Google Front End and load balancer health checks to reach the Composer subnet."
+
+    source_ranges = [
+        "130.211.0.0/22",
+        "35.191.0.0/16"
+    ]
+    destination_ranges = [local.composer_nane1_primary_range]
+
+    allow {
+        protocol = "tcp"
+        ports    = ["80", "443"]
+    }
+
+    log_config {
+        metadata = "INCLUDE_ALL_METADATA"
+    }
+}
+
+
 resource "google_compute_firewall" "allow_dataproc_egress_traffic" {
     name = "allow-dataproc-subnet-egress"
     project = var.project_id

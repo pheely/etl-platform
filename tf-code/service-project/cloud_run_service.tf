@@ -34,7 +34,7 @@ resource "google_cloud_run_v2_service" "composer_trigger_service" {
 
       env {
         name  = "COMPOSER_WEB_SERVER_URL"
-        value = "https://f3cc5bb0e516408fbe0852fcdde2bb10-dot-northamerica-northeast1.composer.googleusercontent.com"
+        value = "https://82c63cfd95844fd0bbd604398556b629-dot-northamerica-northeast1.composer.googleusercontent.com"
       }
 
       env {

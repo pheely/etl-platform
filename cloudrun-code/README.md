@@ -44,7 +44,7 @@ terraform apply -var 'create_composer_v3=true'
 #### Principal: `admin@pycloudlabs.cc`
 
 ```bash
-curl -X POST "https://f3cc5bb0e516408fbe0852fcdde2bb10-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns" \
+curl -X POST "https://82c63cfd95844fd0bbd604398556b629-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns" \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer $(gcloud auth print-access-token)" \
 -d '{
@@ -66,7 +66,7 @@ Response:
 # POST
 SA_TOKEN=$(gcloud auth print-access-token --impersonate-service-account=cloudrun-sa@py-service-01.iam.gserviceaccount.com)
 
-curl -X POST "https://f3cc5bb0e516408fbe0852fcdde2bb10-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns" \
+curl -X POST "https://82c63cfd95844fd0bbd604398556b629-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/dags/dataproc_serverless_production_pipeline/dagRuns" \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer ${SA_TOKEN}" \
 -d '{
@@ -78,7 +78,7 @@ curl -X POST "https://f3cc5bb0e516408fbe0852fcdde2bb10-dot-northamerica-northeas
 # GET
 SA_TOKEN=$(gcloud auth print-access-token --impersonate-service-account=cloudrun-sa@py-service-01.iam.gserviceaccount.com)
 
-curl "https://f3cc5bb0e516408fbe0852fcdde2bb10-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/version" \
+curl "https://82c63cfd95844fd0bbd604398556b629-dot-northamerica-northeast1.composer.googleusercontent.com/api/v2/version" \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer ${SA_TOKEN}"
 ```
